@@ -76,6 +76,37 @@ Now, you should be able to run the common tasks in the following section.
 
 ## ✅Common Tasks
 
+### Linting and Formatting
+
+The following command will run the equivalent of what gets run during ci:
+
+```shell
+yarn ci
+```
+
+This largely consists of two commands: `format` and `lint`. 
+Running `format` will fix the files, and running `lint:fix` will also do that.
+
+These later two commands are not available at the top level, but are available in the `langchain`, `docs`, and `examples` directories.
+In order to run this for a particular directory, you can run:
+
+```shell
+yarn workspace ${workspace} format
+```
+
+or 
+
+```shell
+yarn workspace ${workspace} lint:fix
+```
+
+For example, in order to run this in the `langchain` directory, you can run:
+
+```shell
+yarn workspace langchain format
+yarn workspace langchain lint:fix
+```
+
 ### Testing
 
 Tests should be added within a `tests/` folder alongside the modules they
@@ -95,6 +126,18 @@ To run tests, run:
 
 ```bash
 yarn test
+```
+
+To run integration tests, run:
+
+```bash
+yarn workspace langchain test:integration
+```
+
+To run a particular test (eg something that has `hnsw` in the name), you can `cd` into the `langchain` directory and the run something like:
+
+```shell
+yarn test -- hnsw
 ```
 
 ### Running examples
