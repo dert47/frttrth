@@ -148,7 +148,7 @@ export interface ChatPromptTemplateInput extends BasePromptTemplateInput {
   /**
    * The prompt messages
    */
-  promptMessages: BaseMessagePromptTemplate[];
+  promptMessages: (BaseMessagePromptTemplate | BaseChatMessage)[];
 
   /**
    * The format of the prompt template. Options are 'f-string', 'jinja-2'
@@ -169,7 +169,7 @@ export class ChatPromptTemplate
   extends BasePromptTemplate
   implements ChatPromptTemplateInput
 {
-  promptMessages: BaseMessagePromptTemplate[];
+  promptMessages: (BaseMessagePromptTemplate | BaseChatMessage)[];
 
   templateFormat: TemplateFormat = "f-string";
 
@@ -187,8 +187,11 @@ export class ChatPromptTemplate
       }
       const inputVariables = new Set<string>();
       for (const promptMessage of this.promptMessages) {
-        for (const inputVariable of promptMessage.inputVariables) {
-          inputVariables.add(inputVariable);
+        //* Check if promptMessage is of type BaseMessagePromptTemplate */
+        if (promptMessage instanceof BaseMessagePromptTemplate) {
+          for (const variable of promptMessage.inputVariables) {
+            inputVariables.add(variable);
+          }
         }
       }
       const difference = new Set(
@@ -226,28 +229,28 @@ export class ChatPromptTemplate
   async formatPromptValue(values: InputValues): Promise<BasePromptValue> {
     let resultMessages: BaseChatMessage[] = [];
     for (const promptMessage of this.promptMessages) {
-      const inputValues: InputValues = {};
-      for (const inputVariable of promptMessage.inputVariables) {
-        if (!(inputVariable in values)) {
-          throw new Error(
-            `Missing value for input variable \`${inputVariable}\``
-          );
+      //* Check if promptMessage is of type BaseMessagePromptTemplate */
+      if (promptMessage instanceof BaseMessagePromptTemplate) {
+        const inputValues: InputValues = {};
+        for (const inputVariable of promptMessage.inputVariables) {
+          if (!(inputVariable in values)) {
+            throw new Error(
+              `Missing value for input variable \`${inputVariable}\``
+            );
+          }
+          inputValues[inputVariable] = values[inputVariable];
         }
-        inputValues[inputVariable] = values[inputVariable];
+        const message = await promptMessage.formatMessages(inputValues);
+        resultMessages = resultMessages.concat(message);
+      } else {
+        resultMessages.push(promptMessage);
       }
-      const message = await promptMessage.formatMessages(inputValues);
-      resultMessages = resultMessages.concat(message);
     }
     return new ChatPromptValue(resultMessages);
   }
 
   serialize(): SerializedChatPromptTemplate {
-    return {
-      input_variables: this.inputVariables,
-      output_parser: this.outputParser?.serialize(),
-      template_format: this.templateFormat,
-      prompt_messages: this.promptMessages,
-    };
+    throw new Error("Method not implemented.");
   }
 
   async partial(_: PartialValues): Promise<BasePromptTemplate> {
@@ -255,12 +258,14 @@ export class ChatPromptTemplate
   }
 
   static fromPromptMessages(
-    promptMessages: BaseMessagePromptTemplate[]
+    promptMessages: (BaseMessagePromptTemplate | BaseChatMessage)[]
   ): ChatPromptTemplate {
     const inputVariables = new Set<string>();
     for (const promptMessage of promptMessages) {
-      for (const inputVariable of promptMessage.inputVariables) {
-        inputVariables.add(inputVariable);
+      if (promptMessage instanceof BaseMessagePromptTemplate) {
+        for (const variable of promptMessage.inputVariables) {
+          inputVariables.add(variable);
+        }
       }
     }
     return new ChatPromptTemplate({

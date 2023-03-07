@@ -131,9 +131,17 @@ test("Test fromPromptMessages", async () => {
   ]);
 });
 
-test("Test SimpleMessagePromptTemplate", async () => {
+test("Test MessagePlaceholder", async () => {
   const prompt = new MessagesPlaceholder("foo");
   const values = { foo: [new HumanChatMessage("Hello Foo, I'm Bar")] };
   const messages = await prompt.formatMessages(values);
   expect(messages).toEqual([new HumanChatMessage("Hello Foo, I'm Bar")]);
+});
+
+test("Test using ChatMessages", async () => {
+  const chatPrompt = ChatPromptTemplate.fromPromptMessages([
+    new HumanChatMessage("foo"),
+  ]);
+  const messages = await chatPrompt.formatPromptValue({});
+  expect(messages).toEqual([new HumanChatMessage("foo")]);
 });
