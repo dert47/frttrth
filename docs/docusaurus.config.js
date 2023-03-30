@@ -17,10 +17,14 @@ const config = {
     mendableAnonKey: process.env.MENDABLE_ANON_KEY,
   },
   // Set the production url of your site here
-  url: "https://js.langchain.com",
+  url: "https://hwchase17.github.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: "/",
+  baseUrl: "/langchainjs/",
+  // GitHub pages deployment config.
+  // If you aren't using GitHub pages, you don't need these.
+  organizationName: "hwchase17", // Usually your GitHub org/user name.
+  projectName: "langchainjs", // Usually your repo name.
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
@@ -131,6 +135,13 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      // <meta http-equiv="refresh" content="0; url=https://example.com/newlocation">
+      metadata: [
+        {
+          "http-equiv": "refresh",
+          content: "0; url=https://js.langchain.com/docs/",
+        },
+      ],
       prism: {
         theme: require("prism-react-renderer/themes/vsLight"),
         darkTheme: require("prism-react-renderer/themes/vsDark"),
