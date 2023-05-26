@@ -6,13 +6,18 @@ import {
   PartialValues,
 } from "../schema/index.js";
 import { BaseOutputParser } from "../schema/output_parser.js";
+import { Serializable } from "../schema/load.js";
 import { SerializedBasePromptTemplate } from "./serde.js";
 
 export class StringPromptValue extends BasePromptValue {
+  lc_namespace = ["langchain", "prompts"];
+
+  lc_name = "base";
+
   value: string;
 
   constructor(value: string) {
-    super();
+    super(...arguments);
     this.value = value;
   }
 
@@ -47,7 +52,16 @@ export interface BasePromptTemplateInput {
  * Base class for prompt templates. Exposes a format method that returns a
  * string prompt given a set of input values.
  */
-export abstract class BasePromptTemplate implements BasePromptTemplateInput {
+export abstract class BasePromptTemplate
+  extends Serializable
+  implements BasePromptTemplateInput
+{
+  lc_namespace = ["langchain", "prompts"];
+
+  get lc_name(): string {
+    return this._getPromptType();
+  }
+
   inputVariables: string[];
 
   outputParser?: BaseOutputParser;
@@ -55,6 +69,7 @@ export abstract class BasePromptTemplate implements BasePromptTemplateInput {
   partialVariables?: InputValues;
 
   constructor(input: BasePromptTemplateInput) {
+    super(input);
     const { inputVariables } = input;
     if (inputVariables.includes("stop")) {
       throw new Error(
@@ -149,7 +164,7 @@ export abstract class BasePromptTemplate implements BasePromptTemplateInput {
 }
 
 export abstract class BaseStringPromptTemplate extends BasePromptTemplate {
-  async formatPromptValue(values: InputValues): Promise<BasePromptValue> {
+  async formatPromptValue(values: InputValues): Promise<StringPromptValue> {
     const formattedPrompt = await this.format(values);
     return new StringPromptValue(formattedPrompt);
   }
@@ -158,7 +173,9 @@ export abstract class BaseStringPromptTemplate extends BasePromptTemplate {
 /**
  * Base class for example selectors.
  */
-export abstract class BaseExampleSelector {
+export abstract class BaseExampleSelector extends Serializable {
+  lc_namespace = ["langchain", "prompts"];
+
   abstract addExample(example: Example): Promise<void | string>;
 
   abstract selectExamples(input_variables: Example): Promise<Example[]>;
