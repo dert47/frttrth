@@ -6,6 +6,7 @@ import {
   PartialValues,
 } from "../schema/index.js";
 import { BaseOutputParser } from "../schema/output_parser.js";
+import { Serializable } from "../schema/serde.js";
 import { SerializedBasePromptTemplate } from "./serde.js";
 
 export class StringPromptValue extends BasePromptValue {
@@ -47,7 +48,16 @@ export interface BasePromptTemplateInput {
  * Base class for prompt templates. Exposes a format method that returns a
  * string prompt given a set of input values.
  */
-export abstract class BasePromptTemplate implements BasePromptTemplateInput {
+export abstract class BasePromptTemplate
+  extends Serializable
+  implements BasePromptTemplateInput
+{
+  lc_namespace = ["langchain", "prompts"];
+
+  get lc_name(): string {
+    return this._getPromptType();
+  }
+
   inputVariables: string[];
 
   outputParser?: BaseOutputParser;
@@ -55,6 +65,7 @@ export abstract class BasePromptTemplate implements BasePromptTemplateInput {
   partialVariables?: InputValues;
 
   constructor(input: BasePromptTemplateInput) {
+    super(input);
     const { inputVariables } = input;
     if (inputVariables.includes("stop")) {
       throw new Error(
