@@ -57,6 +57,8 @@ module.exports = {
     "no-return-await": 0,
     "consistent-return": 0,
     "no-else-return": 0,
+    "func-names": 0,
+    "no-lonely-if": 0,
     "new-cap": ["error", { properties: false, capIsNew: false }],
   },
 };
