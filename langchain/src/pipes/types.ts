@@ -1,85 +1,65 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Callbacks } from "../callbacks/manager.js";
+import { Serialized } from "../schema/serde.js";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Args = Record<string, any>;
 
-export type Tuple = [string | number, any];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Tuple = [string, any];
 
+// ReadableStream type in TypeScript is incorrect
 export type ReadableStreamIterable<T> = ReadableStream<T> & {
   [Symbol.asyncIterator](): AsyncIterator<T>;
 };
 
-export interface PieceContextFields {
-  args: Args;
+export interface NodeOptions {
   callbacks?: Callbacks;
-  controller: AbortController;
-  input: ReadableStream<Tuple>;
-  output: WritableStream<Tuple>;
+  textKey: string;
 }
 
-export class PieceContext {
+export interface NodeContextFields {
+  args: Args;
+  options: NodeOptions;
+  controller: AbortController;
+  input: ReadableStream<Tuple>;
+  output: WritableStream<Tuple | string>;
+}
+
+export class NodeContext {
   args: Args;
 
-  callbacks?: Callbacks;
+  options: NodeOptions;
 
   controller: AbortController;
 
   input: ReadableStreamIterable<Tuple>;
 
-  output: WritableStream<Tuple>;
+  output: WritableStream<Tuple | string>;
 
-  constructor({
-    args,
-    controller,
-    callbacks,
-    input,
-    output,
-  }: PieceContextFields) {
+  constructor({ args, controller, options, input, output }: NodeContextFields) {
     this.args = args;
+    this.options = options;
     this.controller = controller;
-    this.callbacks = callbacks;
     this.input = input as this["input"];
     this.output = output;
   }
 
   static create(
-    fields: Omit<PieceContextFields, "output">
-  ): [PieceContext, TransformStream<Tuple, Tuple>] {
-    const transform = new TransformStream<Tuple, Tuple>();
+    fields: Omit<NodeContextFields, "output">
+  ): [NodeContext, TransformStream<Tuple | string, Tuple | string>] {
+    const transform = new TransformStream<Tuple | string, Tuple | string>();
     return [
-      new PieceContext({
-        ...fields,
-        output: transform.writable,
-      }),
+      new NodeContext({ ...fields, output: transform.writable }),
       transform,
     ];
   }
 }
 
-export type PieceFunction = (ctx: PieceContext) => Promise<void>;
+export type NodeProgram =
+  | ((ctx: NodeContext) => Promise<void>)
+  | ((ctx: NodeContext) => AsyncGenerator<string | Tuple, void, void>);
 
-export type PieceGenerator = (
-  ctx: PieceContext
-) => AsyncGenerator<Tuple, void, void>;
-
-export type RunnablePiece = PieceFunction | PieceGenerator;
-
-export type SerializedPiece = object;
-
-export interface Piece {
-  asPiece: RunnablePiece;
-  toJSON(): SerializedPiece;
-}
-
-export interface ComposeOptions {
-  interruptOnError?: boolean;
-}
-
-export interface StreamOptions {
-  signal?: AbortSignal;
-  callbacks?: Callbacks;
-}
-
-export interface RunOptions {
-  combineKeys?: "string" | "array";
+export interface Node {
+  asNode: NodeProgram;
+  toJSON(): Serialized | object; // TODO: Remove object
 }

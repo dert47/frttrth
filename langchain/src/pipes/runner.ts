@@ -1,20 +1,28 @@
+import { map } from "./streams.js";
 import {
   Args,
-  PieceContext,
-  Piece,
+  NodeContext,
+  Node,
   ReadableStreamIterable,
-  RunOptions,
-  StreamOptions,
   Tuple,
+  NodeOptions,
 } from "./types.js";
 
+export interface StreamOptions extends Partial<NodeOptions> {
+  signal?: AbortSignal;
+}
+
+export interface RunOptions extends StreamOptions {
+  combineKeys?: "string" | "array";
+}
+
 export function consume(
-  piece: Piece,
-  ctx: PieceContext,
-  output: TransformStream<Tuple, Tuple>
+  node: Node,
+  ctx: NodeContext,
+  output: TransformStream<Tuple | string, Tuple | string>
 ): ReadableStreamIterable<Tuple> {
   // Run the piece
-  const run = piece.asPiece(ctx);
+  const run = node.asNode(ctx);
   // Create a completion promise and handle output
   const completion =
     // eslint-disable-next-line no-instanceof/no-instanceof
@@ -32,13 +40,18 @@ export function consume(
   // Handle errors
   completion.catch(() => ctx.controller.abort());
   // Return the output stream
-  return output.readable as ReadableStreamIterable<Tuple>;
+  return output.readable.pipeThrough(
+    // If the chunk is a string, wrap it in a tuple with textKey
+    map((chunk) =>
+      typeof chunk === "string" ? [ctx.options.textKey, chunk] : chunk
+    )
+  ) as ReadableStreamIterable<Tuple>;
 }
 
 export function stream(
-  piece: Piece,
+  piece: Node,
   args: Args,
-  options?: StreamOptions
+  options: StreamOptions = {}
 ): ReadableStreamIterable<Tuple> {
   // Create an abort controller for the run
   const controller = new AbortController();
@@ -56,34 +69,40 @@ export function stream(
     },
   });
   // Create a context for running the piece
-  const [ctx, output] = PieceContext.create({
+  const [ctx, output] = NodeContext.create({
     args,
     controller,
-    callbacks: options?.callbacks,
     input,
+    options: {
+      callbacks: options.callbacks,
+      textKey: options.textKey ?? "text",
+    },
   });
   // Run the piece and return the output stream
   return consume(piece, ctx, output);
 }
 
 export async function run(
-  piece: Piece,
+  node: Node,
   args: Args,
   { combineKeys = "string", ...options }: RunOptions = {}
 ): Promise<Args> {
   const output: Args = {};
-  for await (const [key, value] of stream(piece, args, options)) {
+  const nullKey = "output";
+  // TODO Move this sink utility to streams.ts
+  for await (const [key, value] of stream(node, args, options)) {
+    const Key = key ?? nullKey;
     if (combineKeys === "string") {
-      if (key in output) {
-        output[key] += value;
+      if (Key in output) {
+        output[Key] += value;
       } else {
-        output[key] = value;
+        output[Key] = value;
       }
     } else {
-      if (key in output) {
-        output[key].push(value);
+      if (Key in output) {
+        output[Key].push(value);
       } else {
-        output[key] = [value];
+        output[Key] = [value];
       }
     }
   }

@@ -1,12 +1,12 @@
 import { test, expect } from "@jest/globals";
 
-import { PieceContext, Piece, Tuple } from "../types.js";
+import { NodeContext, Node } from "../types.js";
 import { run, stream } from "../runner.js";
 import { sequence } from "../ops.js";
 
 test("stream with generator", async () => {
-  const piece: Piece = {
-    async *asPiece(ctx: PieceContext) {
+  const node: Node = {
+    async *asNode(ctx: NodeContext) {
       for await (const [key, value] of ctx.input) {
         yield [key, `${value}a`];
       }
@@ -18,7 +18,7 @@ test("stream with generator", async () => {
 
   const args = { hello: "there", bye: "you" };
   const outputs = [];
-  for await (const [key, value] of stream(piece, args)) {
+  for await (const [key, value] of stream(node, args)) {
     outputs.push([key, value]);
   }
   expect(outputs).toMatchInlineSnapshot(`
@@ -36,8 +36,8 @@ test("stream with generator", async () => {
 }, 1000);
 
 test("run to arrays", async () => {
-  const piece: Piece = {
-    async *asPiece(ctx: PieceContext) {
+  const node: Node = {
+    async *asNode(ctx: NodeContext) {
       for await (const [key, value] of ctx.input) {
         yield [key, `${value}a`];
       }
@@ -48,7 +48,7 @@ test("run to arrays", async () => {
   };
 
   const args = { hello: "there", bye: "you" };
-  const outputs = await run(piece, args, { combineKeys: "array" });
+  const outputs = await run(node, args, { combineKeys: "array" });
   expect(outputs).toMatchInlineSnapshot(`
     {
       "bye": [
@@ -62,8 +62,8 @@ test("run to arrays", async () => {
 }, 1000);
 
 test("run to strings", async () => {
-  const piece: Piece = {
-    async *asPiece(ctx: PieceContext) {
+  const node: Node = {
+    async *asNode(ctx: NodeContext) {
       for await (const [key, value] of ctx.input) {
         yield [key, `${value}a`];
       }
@@ -74,7 +74,7 @@ test("run to strings", async () => {
   };
 
   const args = { hello: "there", bye: "you" };
-  const outputs = await run(piece, args);
+  const outputs = await run(node, args);
   expect(outputs).toMatchInlineSnapshot(`
     {
       "bye": "youa",
@@ -84,18 +84,11 @@ test("run to strings", async () => {
 }, 1000);
 
 test("run with pipe", async () => {
-  const piece: Piece = {
-    async asPiece(ctx: PieceContext) {
-      const response = await fetch("http://localhost:80/stream/5");
+  const node: Node = {
+    async asNode(ctx: NodeContext) {
+      const response = await fetch("https://httpstat.us/200");
       await response.body
         ?.pipeThrough(new TextDecoderStream())
-        .pipeThrough(
-          new TransformStream<string, Tuple>({
-            transform(chunk, controller) {
-              controller.enqueue(["output", chunk]);
-            },
-          })
-        )
         .pipeTo(ctx.output);
     },
 
@@ -105,22 +98,17 @@ test("run with pipe", async () => {
   };
 
   const args = {};
-  const outputs = await run(piece, args);
+  const outputs = await run(node, args);
   expect(outputs).toMatchInlineSnapshot(`
     {
-      "output": "{"url": "http://localhost/stream/5", "args": {}, "headers": {"Host": "localhost", "Connection": "keep-alive", "Accept": "*/*", "Accept-Language": "*", "Sec-Fetch-Mode": "cors", "User-Agent": "undici", "Accept-Encoding": "gzip, deflate"}, "origin": "172.17.0.1", "id": 0}
-    {"url": "http://localhost/stream/5", "args": {}, "headers": {"Host": "localhost", "Connection": "keep-alive", "Accept": "*/*", "Accept-Language": "*", "Sec-Fetch-Mode": "cors", "User-Agent": "undici", "Accept-Encoding": "gzip, deflate"}, "origin": "172.17.0.1", "id": 1}
-    {"url": "http://localhost/stream/5", "args": {}, "headers": {"Host": "localhost", "Connection": "keep-alive", "Accept": "*/*", "Accept-Language": "*", "Sec-Fetch-Mode": "cors", "User-Agent": "undici", "Accept-Encoding": "gzip, deflate"}, "origin": "172.17.0.1", "id": 2}
-    {"url": "http://localhost/stream/5", "args": {}, "headers": {"Host": "localhost", "Connection": "keep-alive", "Accept": "*/*", "Accept-Language": "*", "Sec-Fetch-Mode": "cors", "User-Agent": "undici", "Accept-Encoding": "gzip, deflate"}, "origin": "172.17.0.1", "id": 3}
-    {"url": "http://localhost/stream/5", "args": {}, "headers": {"Host": "localhost", "Connection": "keep-alive", "Accept": "*/*", "Accept-Language": "*", "Sec-Fetch-Mode": "cors", "User-Agent": "undici", "Accept-Encoding": "gzip, deflate"}, "origin": "172.17.0.1", "id": 4}
-    ",
+      "text": "200 OK",
     }
   `);
 }, 5000);
 
 test("run with sequence", async () => {
-  const addA: Piece = {
-    async *asPiece(ctx: PieceContext) {
+  const addA: Node = {
+    async *asNode(ctx: NodeContext) {
       for await (const [key, value] of ctx.input) {
         yield [key, `${value}a`];
       }
@@ -129,8 +117,8 @@ test("run with sequence", async () => {
       return {};
     },
   };
-  const addB: Piece = {
-    async *asPiece(ctx: PieceContext) {
+  const addB: Node = {
+    async *asNode(ctx: NodeContext) {
       for await (const [key, value] of ctx.input) {
         yield [key, `${value}b`];
       }
@@ -139,8 +127,8 @@ test("run with sequence", async () => {
       return {};
     },
   };
-  const addC: Piece = {
-    async *asPiece(ctx: PieceContext) {
+  const addC: Node = {
+    async *asNode(ctx: NodeContext) {
       for await (const [key, value] of ctx.input) {
         yield [key, `${value}c`];
       }

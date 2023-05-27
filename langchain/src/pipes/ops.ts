@@ -1,13 +1,18 @@
 import { Serialized } from "../schema/serde.js";
 import { consume } from "./runner.js";
-import { PieceContext, Piece } from "./types.js";
+import { NodeContext, Node } from "./types.js";
 
-export function sequence(...pieces: Piece[]): Piece {
+// TODO Implement interruptOnError
+// export interface SequenceOptions {
+//   interruptOnError?: boolean;
+// }
+
+export function sequence(...pieces: Node[]): Node {
   return {
-    async asPiece(ctx: PieceContext) {
+    async asNode(ctx: NodeContext) {
       let { input } = ctx;
       for (const piece of pieces) {
-        input = consume(piece, ...PieceContext.create({ ...ctx, input }));
+        input = consume(piece, ...NodeContext.create({ ...ctx, input }));
       }
       await input.pipeTo(ctx.output);
     },
