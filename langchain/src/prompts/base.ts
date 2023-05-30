@@ -6,14 +6,18 @@ import {
   PartialValues,
 } from "../schema/index.js";
 import { BaseOutputParser } from "../schema/output_parser.js";
-import { Serializable } from "../schema/serde.js";
+import { Serializable } from "../schema/load.js";
 import { SerializedBasePromptTemplate } from "./serde.js";
 
 export class StringPromptValue extends BasePromptValue {
+  lc_namespace = ["langchain", "prompts"];
+
+  lc_name = "base";
+
   value: string;
 
   constructor(value: string) {
-    super();
+    super(...arguments);
     this.value = value;
   }
 
@@ -160,7 +164,7 @@ export abstract class BasePromptTemplate
 }
 
 export abstract class BaseStringPromptTemplate extends BasePromptTemplate {
-  async formatPromptValue(values: InputValues): Promise<BasePromptValue> {
+  async formatPromptValue(values: InputValues): Promise<StringPromptValue> {
     const formattedPrompt = await this.format(values);
     return new StringPromptValue(formattedPrompt);
   }
@@ -169,7 +173,9 @@ export abstract class BaseStringPromptTemplate extends BasePromptTemplate {
 /**
  * Base class for example selectors.
  */
-export abstract class BaseExampleSelector {
+export abstract class BaseExampleSelector extends Serializable {
+  lc_namespace = ["langchain", "prompts"];
+
   abstract addExample(example: Example): Promise<void | string>;
 
   abstract selectExamples(input_variables: Example): Promise<Example[]>;

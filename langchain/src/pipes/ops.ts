@@ -1,4 +1,4 @@
-import { Serialized } from "../schema/serde.js";
+import { Serialized } from "../schema/load.js";
 import { consume } from "./runner.js";
 import { NodeContext, Node } from "./types.js";
 

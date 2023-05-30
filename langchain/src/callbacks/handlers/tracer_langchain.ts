@@ -1,5 +1,6 @@
 import { AsyncCaller, AsyncCallerParams } from "../../util/async_caller.js";
 import { getRuntimeEnvironment } from "../../util/env.js";
+import { BaseCallbackHandlerInput } from "../base.js";
 import { BaseTracer, Run, BaseRun } from "./tracer.js";
 
 export interface RunCreate extends BaseRun {
@@ -24,7 +25,7 @@ export interface TracerSession extends BaseTracerSessionV2 {
   id: string; // uuid
 }
 
-export interface LangChainTracerFields {
+export interface LangChainTracerFields extends BaseCallbackHandlerInput {
   exampleId?: string;
   tenantId?: string;
   sessionName?: string;
@@ -60,14 +61,10 @@ export class LangChainTracer
 
   caller: AsyncCaller;
 
-  constructor({
-    exampleId,
-    tenantId,
-    sessionName,
-    sessionExtra,
-    callerParams,
-  }: LangChainTracerFields = {}) {
-    super();
+  constructor(fields: LangChainTracerFields = {}) {
+    super(fields);
+    const { exampleId, tenantId, sessionName, sessionExtra, callerParams } =
+      fields;
 
     // eslint-disable-next-line no-process-env
     if (typeof process !== "undefined" && process.env?.LANGCHAIN_API_KEY) {

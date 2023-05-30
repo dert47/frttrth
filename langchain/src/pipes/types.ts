@@ -1,5 +1,5 @@
 import { Callbacks } from "../callbacks/manager.js";
-import { Serialized } from "../schema/serde.js";
+import { Serialized } from "../schema/load.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Args = Record<string, any>;
