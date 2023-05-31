@@ -5,10 +5,10 @@ import { run } from "../runner.js";
 import { load } from "../../load/index.js";
 
 test("run with prompt+llm sequence", async () => {
-  const args = { name: "nuno" };
+  const args = { operand: "2" };
   const chain = new Sequence(
-    PromptTemplate.fromTemplate("Hi, my name is {name}, and yours?"),
-    new OpenAI({ temperature: 0, maxTokens: 25 })
+    PromptTemplate.fromTemplate("3 + {operand} ="),
+    new OpenAI({ temperature: 0, maxTokens: 25, streaming: true, stop: ["\n"] })
   );
 
   const result = await run(chain, args);
@@ -17,7 +17,7 @@ test("run with prompt+llm sequence", async () => {
       "0.promptValues": [
         {
           "arguments": [
-            "Hi, my name is nuno, and yours?",
+            "3 + 2 =",
           ],
           "fields": undefined,
           "identifier": [
@@ -30,7 +30,7 @@ test("run with prompt+llm sequence", async () => {
           "v": 1,
         },
       ],
-      "llmResult": [
+      "result": [
         {
           "generations": [
             [
@@ -39,21 +39,16 @@ test("run with prompt+llm sequence", async () => {
                   "finishReason": "stop",
                   "logprobs": null,
                 },
-                "text": "
-
-    My name is [Name]. Nice to meet you.",
+                "text": " 5",
               },
             ],
           ],
           "llmOutput": {
-            "tokenUsage": {
-              "completionTokens": 13,
-              "promptTokens": 11,
-              "totalTokens": 24,
-            },
+            "tokenUsage": {},
           },
         },
       ],
+      "tokens": " 5",
     }
   `);
 
@@ -82,10 +77,10 @@ test("run with prompt+llm sequence", async () => {
           "arguments": [
             {
               "inputVariables": [
-                "name"
+                "operand"
               ],
               "templateFormat": "f-string",
-              "template": "Hi, my name is {name}, and yours?"
+              "template": "3 + {operand} ="
             }
           ]
         },
@@ -101,7 +96,11 @@ test("run with prompt+llm sequence", async () => {
           "arguments": [
             {
               "temperature": 0,
-              "maxTokens": 25
+              "maxTokens": 25,
+              "streaming": true,
+              "stop": [
+                "\\n"
+              ]
             }
           ]
         }

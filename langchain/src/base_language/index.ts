@@ -112,9 +112,20 @@ export abstract class BaseLanguageModel
     this.caller = new AsyncCaller(params ?? {});
   }
 
-  async *asNode(ctx: NodeContext) {
+  async asNode(ctx: NodeContext) {
     const { promptValues } = await ctx.lib.collect(ctx.input);
-    yield ["llmResult", await this.generatePrompt(promptValues)];
+    const writer = ctx.output.getWriter();
+    const llmResult = await this.generatePrompt(promptValues, undefined, [
+      {
+        async handleLLMNewToken(token) {
+          await writer.ready;
+          await writer.write(["tokens", token]);
+        },
+      },
+    ]);
+    await writer.ready;
+    await writer.write(["result", llmResult]);
+    await writer.close();
   }
 
   abstract generatePrompt(
