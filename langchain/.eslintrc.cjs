@@ -59,6 +59,7 @@ module.exports = {
     "no-else-return": 0,
     "func-names": 0,
     "no-lonely-if": 0,
+    "no-plusplus": 0,
     "prefer-rest-params": 0,
     "new-cap": ["error", { properties: false, capIsNew: false }],
   },

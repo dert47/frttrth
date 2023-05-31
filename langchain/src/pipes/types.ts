@@ -1,5 +1,6 @@
-import { Callbacks } from "../callbacks/manager.js";
+import { CallbackManager } from "../callbacks/manager.js";
 import { Serialized } from "../schema/load.js";
+import type * as libT from "./lib.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Args = Record<string, any>;
@@ -16,11 +17,12 @@ export type ReadableStreamIterable<T> = ReadableStream<T> & {
 };
 
 export interface NodeOptions {
-  callbacks?: Callbacks;
-  textKey: string;
+  callbackManager?: CallbackManager;
+  key: string;
 }
 
 export interface NodeContextFields {
+  lib: typeof libT;
   args: Args;
   options: NodeOptions;
   controller: AbortController;
@@ -37,9 +39,19 @@ export class NodeContext {
 
   input: ReadableStreamIterable<Tuple>;
 
-  output: WritableStream<Tuple | string>;
+  output: WritableStream<Tuple | Tuple[1]>;
 
-  constructor({ args, controller, options, input, output }: NodeContextFields) {
+  lib: typeof libT;
+
+  constructor({
+    lib,
+    args,
+    controller,
+    options,
+    input,
+    output,
+  }: NodeContextFields) {
+    this.lib = lib;
     this.args = args;
     this.options = options;
     this.controller = controller;
@@ -60,11 +72,11 @@ export class NodeContext {
 
 export type NodeProgram =
   | ((ctx: NodeContext) => Promise<void>)
-  | ((ctx: NodeContext) => AsyncGenerator<string | Tuple, void, void>);
+  | ((ctx: NodeContext) => AsyncGenerator<Tuple | Tuple[1], void, void>);
 
-export type Node =
-  | {
-      asNode: NodeProgram;
-      toJSON(): Serialized;
-    }
-  | NodeProgram;
+export interface NodeProtocol {
+  asNode: NodeProgram;
+  toJSON(): Serialized;
+}
+
+export type Node = NodeProtocol | NodeProgram;

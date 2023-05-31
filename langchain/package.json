@@ -346,6 +346,9 @@
     "client.cjs",
     "client.js",
     "client.d.ts",
+    "pipes.cjs",
+    "pipes.js",
+    "pipes.d.ts",
     "index.cjs",
     "index.js",
     "index.d.ts"
@@ -1225,6 +1228,11 @@
       "types": "./client.d.ts",
       "import": "./client.js",
       "require": "./client.cjs"
+    },
+    "./pipes": {
+      "types": "./pipes.d.ts",
+      "import": "./pipes.js",
+      "require": "./pipes.cjs"
     },
     "./package.json": "./package.json"
   }

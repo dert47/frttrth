@@ -137,7 +137,8 @@
       "src/experimental/autogpt/index.ts",
       "src/experimental/babyagi/index.ts",
       "src/experimental/plan_and_execute/index.ts",
-      "src/client/index.ts"
+      "src/client/index.ts",
+      "src/pipes/index.ts"
     ],
     "sort": [
       "kind",

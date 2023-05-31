@@ -8,6 +8,7 @@ import {
 import { BaseOutputParser } from "../schema/output_parser.js";
 import { Serializable } from "../schema/load.js";
 import { SerializedBasePromptTemplate } from "./serde.js";
+import { NodeContext, NodeProtocol } from "../pipes/types.js";
 
 export class StringPromptValue extends BasePromptValue {
   lc_namespace = ["langchain", "prompts"];
@@ -54,12 +55,17 @@ export interface BasePromptTemplateInput {
  */
 export abstract class BasePromptTemplate
   extends Serializable
-  implements BasePromptTemplateInput
+  implements BasePromptTemplateInput, NodeProtocol
 {
   lc_namespace = ["langchain", "prompts"];
 
   get lc_name(): string {
     return this._getPromptType();
+  }
+
+  async *asNode(ctx: NodeContext) {
+    const values = await ctx.lib.collect(ctx.input, "string");
+    yield ["promptValues", await this.formatPromptValue(values)];
   }
 
   inputVariables: string[];

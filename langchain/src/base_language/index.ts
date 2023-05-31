@@ -9,6 +9,7 @@ import { AsyncCaller, AsyncCallerParams } from "../util/async_caller.js";
 import { getModelNameForTiktoken } from "./count_tokens.js";
 import { encodingForModel } from "../util/tiktoken.js";
 import { Serializable } from "../schema/load.js";
+import { NodeContext, NodeProtocol } from "../pipes/types.js";
 
 const getVerbosity = () => false;
 
@@ -82,7 +83,7 @@ export interface BaseLanguageModelCallOptions {
  */
 export abstract class BaseLanguageModel
   extends BaseLangChain
-  implements BaseLanguageModelParams
+  implements BaseLanguageModelParams, NodeProtocol
 {
   declare CallOptions: BaseLanguageModelCallOptions;
 
@@ -109,6 +110,11 @@ export abstract class BaseLanguageModel
       ...params,
     });
     this.caller = new AsyncCaller(params ?? {});
+  }
+
+  async *asNode(ctx: NodeContext) {
+    const { promptValues } = await ctx.lib.collect(ctx.input);
+    yield ["llmResult", await this.generatePrompt(promptValues)];
   }
 
   abstract generatePrompt(

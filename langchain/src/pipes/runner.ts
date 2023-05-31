@@ -1,15 +1,18 @@
-import { collect, map } from "./streams.js";
+import { CallbackManager, Callbacks } from "../callbacks/manager.js";
+
+import * as lib from "./lib.js";
 import {
   Args,
   NodeContext,
   Node,
   ReadableStreamIterable,
   Tuple,
-  NodeOptions,
 } from "./types.js";
 
-export interface StreamOptions extends Partial<NodeOptions> {
+export interface StreamOptions {
+  callbacks?: Callbacks;
   signal?: AbortSignal;
+  outputKey?: string;
 }
 
 export interface RunOptions extends StreamOptions {
@@ -38,21 +41,25 @@ export function consume(
           await writer.close();
         })();
   // Handle errors
-  completion.catch(() => ctx.controller.abort());
+  completion.catch((err) => {
+    console.error(err); // TODO surface errors
+    ctx.controller.abort();
+  });
   // Return the output stream
   return output.readable.pipeThrough(
-    // If the chunk is a string, wrap it in a tuple with textKey
-    map((chunk) =>
-      typeof chunk === "string" ? [ctx.options.textKey, chunk] : chunk
-    )
+    // If the chunk is a string, wrap it in a tuple with key
+    lib.map((chunk) =>
+      typeof chunk === "string" ? [ctx.options.key, chunk] : chunk
+    ),
+    { signal: ctx.controller.signal }
   ) as ReadableStreamIterable<Tuple>;
 }
 
-export function stream(
+export async function stream(
   piece: Node,
   args: Args,
   options: StreamOptions = {}
-): ReadableStreamIterable<Tuple> {
+): Promise<ReadableStreamIterable<Tuple>> {
   // Create an abort controller for the run
   const controller = new AbortController();
   options?.signal?.addEventListener("abort", () => controller.abort());
@@ -70,12 +77,13 @@ export function stream(
   });
   // Create a context for running the piece
   const [ctx, output] = NodeContext.create({
+    lib,
     args,
     controller,
     input,
     options: {
-      callbacks: options.callbacks,
-      textKey: options.textKey ?? "text",
+      callbackManager: await CallbackManager.configure(options.callbacks),
+      key: options.outputKey ?? "output",
     },
   });
   // Run the piece and return the output stream
@@ -87,5 +95,5 @@ export async function run(
   args: Args,
   { combineKeys = "string", ...options }: RunOptions = {}
 ) {
-  return collect(stream(node, args, options), combineKeys);
+  return lib.collect(await stream(node, args, options), combineKeys);
 }

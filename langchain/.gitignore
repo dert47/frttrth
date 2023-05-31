@@ -334,6 +334,9 @@ experimental/plan_and_execute.d.ts
 client.cjs
 client.js
 client.d.ts
+pipes.cjs
+pipes.js
+pipes.d.ts
 index.cjs
 index.js
 index.d.ts
