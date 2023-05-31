@@ -1,4 +1,4 @@
-import { map } from "./streams.js";
+import { collect, map } from "./streams.js";
 import {
   Args,
   NodeContext,
@@ -21,8 +21,8 @@ export function consume(
   ctx: NodeContext,
   output: TransformStream<Tuple | string, Tuple | string>
 ): ReadableStreamIterable<Tuple> {
-  // Run the piece
-  const run = node.asNode(ctx);
+  // Run the node
+  const run = typeof node === "function" ? node(ctx) : node.asNode(ctx);
   // Create a completion promise and handle output
   const completion =
     // eslint-disable-next-line no-instanceof/no-instanceof
@@ -86,25 +86,6 @@ export async function run(
   node: Node,
   args: Args,
   { combineKeys = "string", ...options }: RunOptions = {}
-): Promise<Args> {
-  const output: Args = {};
-  const nullKey = "output";
-  // TODO Move this sink utility to streams.ts
-  for await (const [key, value] of stream(node, args, options)) {
-    const Key = key ?? nullKey;
-    if (combineKeys === "string") {
-      if (Key in output) {
-        output[Key] += value;
-      } else {
-        output[Key] = value;
-      }
-    } else {
-      if (Key in output) {
-        output[Key].push(value);
-      } else {
-        output[Key] = [value];
-      }
-    }
-  }
-  return output;
+) {
+  return collect(stream(node, args, options), combineKeys);
 }

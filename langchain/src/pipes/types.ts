@@ -5,7 +5,10 @@ import { Serialized } from "../schema/load.js";
 export type Args = Record<string, any>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Tuple = [string, any];
+export type Tuple<T = any> = [string, T];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type TupleCollection<T = any> = Record<string, Tuple<T>[1][]>;
 
 // ReadableStream type in TypeScript is incorrect
 export type ReadableStreamIterable<T> = ReadableStream<T> & {
@@ -59,7 +62,9 @@ export type NodeProgram =
   | ((ctx: NodeContext) => Promise<void>)
   | ((ctx: NodeContext) => AsyncGenerator<string | Tuple, void, void>);
 
-export interface Node {
-  asNode: NodeProgram;
-  toJSON(): Serialized | object; // TODO: Remove object
-}
+export type Node =
+  | {
+      asNode: NodeProgram;
+      toJSON(): Serialized;
+    }
+  | NodeProgram;
